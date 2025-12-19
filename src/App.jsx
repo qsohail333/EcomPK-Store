@@ -37,8 +37,6 @@ const SORT_OPTIONS = {
   CHEAP: 'cheap',
   EXPENSIVE: 'expensive',
 };
-
-// --- 2. MOCK PRODUCTS (EXPANDED TO 80 ITEMS) ---
 // 20 General Products, 20 Men's, 20 Women's, 20 Kids'
 const MOCK_PRODUCTS = [
   // --- GENERAL PRODUCTS ---
@@ -85,7 +83,7 @@ const MOCK_PRODUCTS = [
   { id: 115, name: "Swim Trunks (Ocean Blue)", price: 2400, image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYpXFmX1pybFzt6KLq2A8Rw0Vpd_Rymj7agA&s", category: PAGES.CLOTHING, subCategory: CLOTHING_CATEGORIES.MENS, description: "Quick-dry liner, elastic waist.", sizeOptions: ["M", "L", "XL"] },
   { id: 116, name: "Flannel Shirt (Plaid)", price: 3100, image: "https://www.alnasser.pk/cdn/shop/products/99_1634981278.jpg?v=1649065830", category: PAGES.CLOTHING, subCategory: CLOTHING_CATEGORIES.MENS, description: "Heavy cotton, button-down collar.", sizeOptions: ["S", "M", "L", "XL"] },
   { id: 117, name: "Thermal Long Sleeve Tops 2 Pack (Blue + Navy)", price: 2999, image: "https://xcdn.next.co.uk/common/items/default/default/itemimages/3_4Ratio/product/lge/Q55697s.jpg?im=Resize,width=750", category: PAGES.CLOTHING, subCategory: CLOTHING_CATEGORIES.MENS, description: "Insulating base layer.", sizeOptions: ["M", "L"] },
-  { id: 118, name: "Denim Jeans (Regular Fit)", price: 4100, image: "https://lh4.googleusercontent.com/proxy/q-VJgdY0M_ETTMTsXGEpFXH5lzlSJpH25M0-GIEqntLYfd0VWjBXR26KCZs9NqyGlvm2hah--FLOa0RQAy0c5NQnbCVkaGBgLZRVgQM8APdCNO9EJFanwy0DsDCmnSuf1GwgcBqmQlZjwkQ", category: PAGES.CLOTHING, subCategory: CLOTHING_CATEGORIES.MENS, description: "Dark wash, durable stitching.", sizeOptions: ["30", "32", "34", "36"] },
+  { id: 118, name: "Denim Jeans (Regular Fit)", price: 4100, image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXlWxKHGQJPeTV7iTxuW4rLPXu0ZtnzLS--w&s", category: PAGES.CLOTHING, subCategory: CLOTHING_CATEGORIES.MENS, description: "Dark wash, durable stitching.", sizeOptions: ["30", "32", "34", "36"] },
   { id: 119, name: "Running Jacket Windproof (Green)", price: 5000, image: "https://static.cimalp.fr/40715-large_default/ultrashell-rainproof-and-windproof-trail-running-jacket.jpg", category: PAGES.CLOTHING, subCategory: CLOTHING_CATEGORIES.MENS, description: "Lightweight and reflective details.", sizeOptions: ["M", "L", "XL"] },
   { id: 120, name: " Black Socks (Pack of 5)", price: 1890, image: "https://bigfishclothing.co.uk/cdn/shop/files/sk1059.jpg?v=1708530717", category: PAGES.CLOTHING, subCategory: CLOTHING_CATEGORIES.MENS, description: "Stretch fit, soft waistband.", sizeOptions: ["S", "M", "L", "XL"] },
 
@@ -466,7 +464,6 @@ const TrackOrderPage = ({ db, userId, appId, isAuthReady }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Function to fetch a single order (now triggered only on submission)
   const handleTrack = async (e) => {
     e.preventDefault();
     if (!db || !isAuthReady) {
@@ -485,18 +482,14 @@ const TrackOrderPage = ({ db, userId, appId, isAuthReady }) => {
     setTrackedOrder(null);
     
     try {
-        // Correct use of doc and getDoc functions
         const orderDocRef = doc(db, `artifacts/${appId}/public/data/orders`, trimmedId);
         const docSnap = await getDoc(orderDocRef);
 
         if (docSnap.exists()) {
             const orderData = { id: docSnap.id, ...docSnap.data() };
-            // Basic security check (only show if it belongs to the current user or is a public order)
-            if (orderData.userId === userId || !orderData.userId) { 
-               setTrackedOrder(orderData);
-            } else {
-               setError(`Order ID "${trimmedId}" found, but it does not match your current user session.`);
-            }
+            // FIX: Removed the userId comparison. 
+            // Now, if the document exists, it will display the order to the tracker.
+            setTrackedOrder(orderData);
         } else {
             setError(`Order ID "${trimmedId}" not found.`);
         }
@@ -589,8 +582,6 @@ const TrackOrderPage = ({ db, userId, appId, isAuthReady }) => {
     </div>
   );
 };
-
-
 const OrderSuccessPage = ({ orderId, navigate }) => (
   <div className="p-8 bg-white rounded-xl shadow-2xl max-w-lg mx-auto text-center border-t-4 border-emerald-500">
       <Check className="w-16 h-16 mx-auto text-emerald-600 mb-6 bg-emerald-100 p-2 rounded-full" />
@@ -634,7 +625,7 @@ const CartSidebar = ({ cart, setCart, toggleCart, navigate, db, userId, appId, i
     const [email, setEmail] = useState('');
     const [addresses, setAddresses] = useState('');
     const [city, setCity] = useState('');
-    const [country, setCountry] = useState('Pakistan'); // Default country
+    const [country, setCountry] = useState('Pakistan');
 
     const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
 
@@ -655,16 +646,7 @@ const CartSidebar = ({ cart, setCart, toggleCart, navigate, db, userId, appId, i
 
     const handleCheckout = async (e) => {
         e.preventDefault();
-        
-        if (cart.length === 0) {
-            console.error("Cart is empty.");
-            return;
-        }
-
-        if (!db || !userId || !isAuthReady) {
-            console.error("Database connection not ready. Please wait or check connection.");
-            return;
-        }
+        if (cart.length === 0 || !db || !userId || !isAuthReady) return;
 
         setIsCheckingOut(true);
 
@@ -685,21 +667,18 @@ const CartSidebar = ({ cart, setCart, toggleCart, navigate, db, userId, appId, i
                 size: item.size || 'N/A',
                 image: item.image,
             })),
-            status: 'Pending', // Initial status
+            status: 'Pending',
             timestamp: Date.now(),
         };
 
         try {
-            // Save the order to the public orders collection
             const ordersRef = collection(db, `artifacts/${appId}/public/data/orders`);
             const docRef = await addDoc(ordersRef, orderData);
-            
-            setCart([]); // Clear cart on success
-            toggleCart(); // Close cart
-            navigate(PAGES.CHECKOUT_SUCCESS, docRef.id); // Navigate to success page with Order ID
+            setCart([]);
+            toggleCart();
+            navigate(PAGES.CHECKOUT_SUCCESS, docRef.id);
         } catch (error) {
             console.error("Error during checkout:", error);
-            // Show custom modal/message for error (instead of alert)
         } finally {
             setIsCheckingOut(false);
         }
@@ -710,108 +689,107 @@ const CartSidebar = ({ cart, setCart, toggleCart, navigate, db, userId, appId, i
     return (
         <div className="fixed inset-0 overflow-hidden z-50">
             <div className="absolute inset-0 overflow-hidden">
-                {/* Overlay */}
                 <div 
                     className="absolute inset-0 bg-gray-900 bg-opacity-75 transition-opacity" 
                     onClick={toggleCart}
                 ></div>
 
-                {/* Sidebar Panel */}
-                <section className="absolute inset-y-0 right-0 max-w-full flex">
-                    <div className="w-screen max-w-md">
+                {/* Updated section classes for full width */}
+                <section className="absolute inset-y-0 right-0 w-full flex">
+                    <div className="w-full"> {/* Changed from max-w-md to full width */}
                         <div className="h-full flex flex-col bg-white shadow-xl">
                             
                             {/* Header */}
-                            <div className="p-6 bg-emerald-600 text-white flex items-center justify-between rounded-bl-xl">
+                            <div className="p-6 bg-emerald-600 text-white flex items-center justify-between">
                                 <h2 className="text-2xl font-bold flex items-center">
-                                    <ShoppingCart className="w-6 h-6 mr-3" /> Shopping Cart
+                                    <ShoppingCart className="w-6 h-6 mr-3" /> Review Your Order
                                 </h2>
-                                <button onClick={toggleCart} className="text-white hover:text-gray-100 transition-colors p-1">
-                                    <X className="w-6 h-6" />
+                                <button onClick={toggleCart} className="text-white hover:text-gray-100 transition-colors p-2 bg-emerald-700 rounded-xl">
+                                    <X className="w-8 h-8" />
                                 </button>
                             </div>
                             
-                            {/* Cart Items */}
-                            <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-                                {isCartEmpty ? (
-                                    <div className="text-center py-12 text-gray-500">
-                                        <ShoppingCart className="w-10 h-10 mx-auto mb-3" />
-                                        <p className="font-semibold">Your cart is empty.</p>
-                                    </div>
-                                ) : (
-                                    <ul className="divide-y divide-gray-200 space-y-4">
-                                        {cart.map((item) => (
-                                            <li key={item.uniqueId} className="flex py-4">
-                                                <img 
-                                                    src={item.image} 
-                                                    alt={item.name} 
-                                                    className="h-20 w-20 shrink-0 rounded-xl object-cover border border-gray-200"
-                                                    onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/80x80/e5e7eb/4b5563?text=P"; }}
-                                                />
-
-                                                <div className="ml-4 flex flex-1 flex-col">
-                                                    <div>
-                                                        <div className="flex justify-between text-base font-medium text-gray-900">
-                                                            <h3>{item.name}</h3>
-                                                            <p className="ml-4 font-bold text-emerald-600">Rs. {(item.price * item.quantity).toLocaleString()}</p>
-                                                        </div>
-                                                        <p className="mt-1 text-sm text-gray-500">Size: {item.size || 'N/A'}</p>
-                                                    </div>
-                                                    <div className="flex flex-1 items-end justify-between text-sm mt-2">
-                                                        <div className="flex items-center space-x-2">
-                                                            <button onClick={() => updateQuantity(item.uniqueId, -1)} className="p-1 border rounded-full hover:bg-gray-100 transition">
-                                                                <Minus className="w-4 h-4" />
-                                                            </button>
-                                                            <span className="font-semibold">{item.quantity}</span>
-                                                            <button onClick={() => updateQuantity(item.uniqueId, 1)} className="p-1 border rounded-full hover:bg-gray-100 transition">
-                                                                <Plus className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-
-                                                        <button 
-                                                            onClick={() => removeItem(item.uniqueId)} 
-                                                            type="button" 
-                                                            className="font-medium text-red-600 hover:text-red-500"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                                
-                                {/* Checkout Form */}
-                                <div className="mt-8 pt-6 border-t border-gray-200">
-                                    <div className="flex justify-between text-xl font-bold text-gray-900 mb-4">
-                                        <p>Total:</p>
-                                        <p>Rs. {cartTotal.toLocaleString()}</p>
-                                    </div>
+                            {/* Content Wrapper for Full Screen Layout */}
+                            <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-10 lg:px-20">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                                     
-                                    <form onSubmit={handleCheckout} className="space-y-3">
-                                        <h4 className="text-lg font-semibold text-gray-800 border-b pb-1 flex items-center"><User className="w-4 h-4 mr-2"/> Delivery & Contact Details</h4>
-                                        <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} required className="w-full p-2 border border-gray-300 rounded-lg" />
-                                        <input type="email" placeholder="Email Address (e.g., user@example.com)" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full p-2 border border-gray-300 rounded-lg" />
-                                        <input type="tel" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} required className="w-full p-2 border border-gray-300 rounded-lg" />
+                                    {/* Left Column: Cart Items */}
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                            <Package className="w-5 h-5 mr-2"/> Your Items
+                                        </h3>
+                                        {isCartEmpty ? (
+                                            <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-2xl">
+                                                <ShoppingCart className="w-10 h-10 mx-auto mb-3" />
+                                                <p className="font-semibold">Your cart is empty.</p>
+                                            </div>
+                                        ) : (
+                                            <ul className="divide-y divide-gray-200 space-y-4">
+                                                {cart.map((item) => (
+                                                    <li key={item.uniqueId} className="flex py-6 bg-white border-b">
+                                                        <img 
+                                                            src={item.image} 
+                                                            alt={item.name} 
+                                                            className="h-24 w-24 shrink-0 rounded-2xl object-cover border border-gray-200 shadow-sm"
+                                                        />
+                                                        <div className="ml-6 flex flex-1 flex-col">
+                                                            <div className="flex justify-between text-lg font-bold text-gray-900">
+                                                                <h3>{item.name}</h3>
+                                                                <p className="text-emerald-600">Rs. {(item.price * item.quantity).toLocaleString()}</p>
+                                                            </div>
+                                                            <p className="mt-1 text-sm text-gray-500 font-medium">Size: {item.size || 'N/A'}</p>
+                                                            <div className="flex flex-1 items-end justify-between mt-4">
+                                                                <div className="flex items-center space-x-4 bg-gray-100 p-2 rounded-xl">
+                                                                    <button onClick={() => updateQuantity(item.uniqueId, -1)} className="p-1 hover:text-emerald-600 transition">
+                                                                        <Minus className="w-5 h-5" />
+                                                                    </button>
+                                                                    <span className="font-bold text-lg">{item.quantity}</span>
+                                                                    <button onClick={() => updateQuantity(item.uniqueId, 1)} className="p-1 hover:text-emerald-600 transition">
+                                                                        <Plus className="w-5 h-5" />
+                                                                    </button>
+                                                                </div>
+                                                                <button onClick={() => removeItem(item.uniqueId)} className="font-bold text-red-600 hover:text-red-500 underline">
+                                                                    Remove
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
 
-                                        <h4 className="text-lg font-semibold text-gray-800 border-b pb-1 pt-3 flex items-center"><MapPin className="w-4 h-4 mr-2"/> Shipping Address</h4>
-                                        <input type="text" placeholder="Street Address / House No." value={addresses} onChange={(e) => setAddresses(e.target.value)} required className="w-full p-2 border border-gray-300 rounded-lg" />
-                                        
-                                        <div className="flex gap-3">
-                                          <input type="text" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} required className="w-1/2 p-2 border border-gray-300 rounded-lg" />
-                                          <input type="text" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} required className="w-1/2 p-2 border border-gray-300 rounded-lg" />
+                                    {/* Right Column: Checkout Form */}
+                                    <div className="bg-gray-50 p-6 rounded-3xl shadow-inner border border-gray-200 h-fit sticky top-0">
+                                        <div className="flex justify-between text-2xl font-black text-gray-900 mb-6">
+                                            <p>Total Payable:</p>
+                                            <p className="text-emerald-700">Rs. {cartTotal.toLocaleString()}</p>
                                         </div>
+                                        
+                                        <form onSubmit={handleCheckout} className="space-y-4">
+                                            <h4 className="text-lg font-bold text-gray-800 flex items-center"><User className="w-5 h-5 mr-2"/> Delivery Details</h4>
+                                            <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} required className="w-full p-4 border border-gray-300 rounded-xl focus:ring-4 focus:ring-emerald-500/20 outline-none transition-all" />
+                                            <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full p-4 border border-gray-300 rounded-xl focus:ring-4 focus:ring-emerald-500/20 outline-none transition-all" />
+                                            <input type="tel" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} required className="w-full p-4 border border-gray-300 rounded-xl focus:ring-4 focus:ring-emerald-500/20 outline-none transition-all" />
 
-                                        <button
-                                            type="submit"
-                                            disabled={isCheckingOut || isCartEmpty || !name || !phone || !addresses || !city || !country || !email}
-                                            className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 flex items-center justify-center"
-                                        >
-                                            {isCheckingOut ? <Loader className="w-5 h-5 animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
-                                            {isCheckingOut ? 'Processing...' : `Place Order (Rs. ${cartTotal.toLocaleString()})`}
-                                        </button>
-                                    </form>
+                                            <h4 className="text-lg font-bold text-gray-800 pt-4 flex items-center"><MapPin className="w-5 h-5 mr-2"/> Shipping Address</h4>
+                                            <input type="text" placeholder="Street Address / House No." value={addresses} onChange={(e) => setAddresses(e.target.value)} required className="w-full p-4 border border-gray-300 rounded-xl focus:ring-4 focus:ring-emerald-500/20 outline-none transition-all" />
+                                            
+                                            <div className="flex gap-4">
+                                              <input type="text" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} required className="w-1/2 p-4 border border-gray-300 rounded-xl focus:ring-4 focus:ring-emerald-500/20 outline-none transition-all" />
+                                              <input type="text" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} required className="w-1/2 p-4 border border-gray-300 rounded-xl focus:ring-4 focus:ring-emerald-500/20 outline-none transition-all" />
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                disabled={isCheckingOut || isCartEmpty || !name || !phone || !addresses || !city || !email}
+                                                className="w-full mt-6 bg-emerald-600 text-white py-5 rounded-2xl font-black text-xl hover:bg-emerald-700 transition-all shadow-xl disabled:opacity-50 flex items-center justify-center transform hover:scale-[1.02] active:scale-95"
+                                            >
+                                                {isCheckingOut ? <Loader className="w-6 h-6 animate-spin mr-3" /> : <Check className="w-6 h-6 mr-3" />}
+                                                {isCheckingOut ? 'Processing Your Order...' : `Confirm Order - Rs. ${cartTotal.toLocaleString()}`}
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
